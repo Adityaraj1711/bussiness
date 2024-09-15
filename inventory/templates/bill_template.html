@@ -1,0 +1,251 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+    <meta charset="utf-8">
+    <title>Invoice Template</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="./web/modern-normalize.css">
+    <link rel="stylesheet" href="./web/web-base.css">
+    <link rel="stylesheet" href="./web/invoice.css">
+    <script type="text/javascript" src="./web/scripts.js"></script>
+    <style>
+        /*
+  Common invoice styles. These styles will work in a browser or using the HTML
+  to PDF anvil endpoint.
+*/
+
+        body {
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table tr td {
+            padding: 0;
+        }
+
+        table tr td:last-child {
+            text-align: right;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .large {
+            font-size: 1.75em;
+        }
+
+        .total {
+            font-weight: bold;
+            color: #fb7578;
+        }
+
+        .logo-container {
+            margin: 10px 0 10px 0;
+        }
+
+        .invoice-info-container {
+            font-size: 0.875em;
+        }
+        .invoice-info-container td {
+            padding: 4px 0;
+        }
+
+        .client-name {
+            font-size: 1.5em;
+            vertical-align: top;
+        }
+
+        .line-items-container {
+            margin: 10px 0;
+            font-size: 0.75em;
+        }
+
+        .line-items-container th {
+            text-align: left;
+            color: #999;
+            border-bottom: 2px solid #ddd;
+            padding: 10px 0 15px 0;
+            font-size: 0.75em;
+            text-transform: uppercase;
+        }
+
+        .line-items-container th:last-child {
+            text-align: right;
+        }
+
+        .line-items-container td {
+            text-align: left;
+            color: #999;
+            border-bottom: 2px solid #ddd;
+            padding: 10px 0 15px 0;
+            font-size: 0.75em;
+            text-transform: uppercase;
+        }
+
+        .line-items-container tbody tr:first-child td {
+            padding-top: 15px;
+        }
+
+        .line-items-container.has-bottom-border tbody tr:last-child td {
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .line-items-container.has-bottom-border {
+            margin-bottom: 0;
+        }
+
+        .line-items-container th.heading-quantity {
+            width: 100px;
+        }
+        .line-items-container th.heading-price {
+            text-align: right;
+            width: 100px;
+        }
+        .line-items-container th.heading-subtotal {
+            width: 100px;
+        }
+
+        .payment-info {
+            width: 28%;
+            font-size: 0.55em;
+            line-height: 1;
+        }
+
+        .footer {
+            margin-top: 10px;
+        }
+
+        .footer-thanks {
+            font-size: 0.5em;
+        }
+
+        .footer-thanks img {
+            display: inline-block;
+            position: relative;
+            top: 1px;
+            width: 6px;
+            margin-right: 4px;
+        }
+
+        .footer-info {
+            float: right;
+            margin-top: 5px;
+            font-size: 0.5em;
+            color: #ccc;
+        }
+
+        .footer-info span {
+            padding: 0 5px;
+            color: black;
+        }
+
+        .footer-info span:last-child {
+            padding-right: 0;
+        }
+
+        .page-container {
+            display: none;
+        }
+
+        .web-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="web-container">
+
+    <!-- See invoice.html! It is injected here... -->
+
+</div>
+
+<div class="page-container">
+</div>
+
+<div class="logo-container">
+    <img
+            style="height: 88px"
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxtls6eA4RJieDvlipn7u92cFGWf_J2ay1bA&s"
+    >
+</div>
+
+<table class="invoice-info-container">
+    <tr>
+        <td rowspan="2" class="client-name">
+            Dukandaar: <strong>{{ bill.dukandaar.name }}
+        </td>
+        <td>
+            Address: {{ bill.dukandaar.address }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Phone: {{ bill.dukandaar.phone }}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Invoice Date: <strong>{{ bill.date }}</strong>
+        </td>
+        <td>
+            San Francisco CA, 94103
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Invoice No: <strong>12345</strong>
+        </td>
+        <td>
+            hello@useanvil.com
+        </td>
+    </tr>
+</table>
+
+
+<table class="line-items-container">
+    <thead>
+    <tr>
+        <th class="heading-description">Product Name</th>
+        <th class="heading-quantity">Qty in KG</th>
+        <th class="heading-price">Price per KG</th>
+        <th class="heading-subtotal">Subtotal</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in bill.items.all %}
+    <tr>
+        <td>{{ item.product.name }}</td>
+        <td>{{ item.kg }}</td>
+        <td>{{ item.price_per_kg }}</td>
+        <td>{{ item.amount }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div class="footer">
+    <div class="footer-info">
+        <span>savitrisuman0803@gmail.com</span> |
+        <span>useanvil.com</span>
+    </div>
+    <div class="footer-thanks">
+        <span>Thank you!</span>
+    </div>
+</div>
+
+</body></html>
