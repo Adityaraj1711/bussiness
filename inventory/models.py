@@ -10,15 +10,22 @@ class Area(models.Model):
 class Company(models.Model):
     name = models.CharField(max_length=255)
     contact_info = models.CharField(max_length=255, blank=True)
+    loan_amount = models.DecimalField(max_digits=9, decimal_places=2, default=0, blank=False)
 
     def __str__(self):
         return self.name
 
 class Product(models.Model):
-    name = models.CharField(max_length=255)
-    stock_in_kg = models.IntegerField(default=0)
-    one_bora_in_kg = models.IntegerField(default=0)
+    name = models.CharField(max_length=255, blank=False, null=False)
+    stock_in_kg = models.IntegerField(default=0, blank=False)
+    one_bora_in_kg = models.IntegerField(default=1, blank=False)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
+
+    @property
+    def stock_in_bora(self):
+        if self.one_bora_in_kg == 0:
+            self.one_bora_in_kg = 1
+        return "{:.2f}".format(self.stock_in_kg / self.one_bora_in_kg)
 
     def __str__(self):
         return self.name
@@ -44,8 +51,11 @@ class Bill(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        self.dukandaar.pending_amount -= self.total_amount
-        self.dukandaar.save()
+        if not self.paid:
+            self.dukandaar.pending_amount -= self.total_amount
+            self.dukandaar.save()
+        for item in self.items.all():
+            item.delete()
         super().delete(*args, **kwargs)
 
     def __str__(self):
@@ -54,37 +64,39 @@ class Bill(models.Model):
 class Item(models.Model):
     bill = models.ForeignKey(Bill, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    kg = models.DecimalField(max_digits=7, decimal_places=2)
+    bora = models.DecimalField(max_digits=4, decimal_places=2, default=0)
+    kg = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     price_per_kg = models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=20, decimal_places=2, editable=False)
 
     def save(self, *args, **kwargs):
-        self.amount = self.kg * self.price_per_kg
+        self.amount = (self.kg * self.price_per_kg) + (self.bora * self.price_per_kg * self.product.one_bora_in_kg)
         super().save(*args, **kwargs)
-        # method(self, self.bill)
         if not self.bill.paid:
             self.bill.total_amount += self.amount
             self.bill.dukandaar.pending_amount += self.amount
             self.bill.dukandaar.save()
             self.bill.save()
+        self.product.stock_in_kg -= ((self.bora * self.product.one_bora_in_kg) + self.kg)
+        self.product.save()
 
     def delete(self, *args, **kwargs):
+        self.product.stock_in_kg += (self.bora * self.product.one_bora_in_kg)
+        self.product.save()
         super().delete(*args, **kwargs)
-        self.bill.total_amount -= self.amount
-        self.bill.dukandaar.pending_amount -= self.amount
-        self.bill.dukandaar.save()
-        self.bill.save()
 
     def __str__(self):
-        return f"{self.product.name} - {self.kg} kg @ {self.price_per_kg} per kg {self.bill}"
+        return f"{self.product.name} - {self.kg} kg @ {self.price_per_kg} per kg {self.bill} Bill order "
 
 
 class DailyCollection(models.Model):
     dukandaar = models.ForeignKey(Dukandaar, related_name='dukandaar', on_delete=models.CASCADE)
     collection_time = models.DateTimeField(auto_now_add=True)
     amount_collected = models.DecimalField(max_digits=10, decimal_places=2)
+    pending_amount_as_of_today = models.DecimalField(max_digits=10, decimal_places=2, editable=False, default=0)
 
     def save(self, *args, **kwargs):
+        self.pending_amount_as_of_today = self.dukandaar.pending_amount - self.amount_collected
         super().save(*args, **kwargs)
         self.dukandaar.pending_amount -= self.amount_collected
         self.dukandaar.save()
@@ -99,23 +111,54 @@ class PurchaseOrder(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
     disc_percent = models.DecimalField(max_digits=4, decimal_places=2, default=2)
 
+    def delete(self, *args, **kwargs):
+        self.company.loan_amount -= self.total_amount
+        self.company.save()
+        for item in self.purchase_order.all():
+            item.delete()
+        super().delete(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.company} - {self.date} - Purchase Order"
+
 class PurchaseItem(models.Model):
-    bill = models.ForeignKey(PurchaseOrder, related_name='purchaseitems', on_delete=models.CASCADE)
+    purchase_order = models.ForeignKey(PurchaseOrder, related_name='purchase_order', on_delete=models.CASCADE, default=1)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    kg = models.DecimalField(max_digits=7, decimal_places=2)
+    bora = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    kg = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     price_per_kg = models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
 
     def save(self, *args, **kwargs):
-        self.amount = self.kg * self.price_per_kg
+        self.amount = (self.kg * self.price_per_kg) + (self.bora * self.price_per_kg * self.product.one_bora_in_kg)
         super().save(*args, **kwargs)
-        self.bill.total_amount += self.amount
-        self.bill.save()
+        self.purchase_order.total_amount += self.amount
+        self.purchase_order.company.loan_amount += self.amount
+        self.purchase_order.company.save()
+        self.product.stock_in_kg += ((self.bora * self.product.one_bora_in_kg) + self.kg)
+        self.product.save()
 
     def delete(self, *args, **kwargs):
+        self.purchase_order.total_amount -= self.amount
+        self.purchase_order.company.loan_amount -= self.amount
+        self.purchase_order.company.save()
+        self.purchase_order.save()
+        self.product.stock_in_kg -= ((self.bora * self.product.one_bora_in_kg) + self.kg)
+        self.product.save()
         super().delete(*args, **kwargs)
-        self.bill.total_amount -= self.amount
-        self.bill.save()
 
     def __str__(self):
-        return f"{self.product.name} - {self.kg} kg @ {self.price_per_kg} per kg {self.bill}"
+        return f"{self.product.name} - {self.kg} kg @ {self.price_per_kg} per kg {self.purchase_order}"
+
+class CompanyPayment(models.Model):
+    company = models.ForeignKey(Company, related_name='company', on_delete=models.CASCADE)
+    payment_date = models.DateField(auto_now_add=True)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.company.loan_amount -= self.amount_paid
+        self.company.save()
+
+    def __str__(self):
+        return f"Paid to {self.company} on {self.payment_date}"
