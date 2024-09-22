@@ -96,3 +96,6 @@ def analytics_view(request):
 def index_page(request):
     context = {}
     return render(request, 'index.html', context=context)
+
+def redirect_to_admin(request):
+    return redirect('/admin/login/')

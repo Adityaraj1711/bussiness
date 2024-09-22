@@ -19,7 +19,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include, re_path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls, name='admin'),
     re_path(r'^', include('inventory.urls')),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]

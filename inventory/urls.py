@@ -6,5 +6,7 @@ urlpatterns = [
     path('collection_success/', views.collection_success, name='collection_success'),
     path('pdf/<int:bill_id>/', views.GeneratePdf.as_view(), name='generatepdf'),
     path('analytics/', views.analytics_view, name='analytics'),
-    path('', views.index_page, name='index')
+    path('', views.index_page, name='index'),
+    path('admin/', views.redirect_to_admin, name='admin')
+
 ]
