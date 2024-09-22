@@ -10,7 +10,7 @@ from datetime import datetime
 FILE_PATH = "./db.sqlite3"  # Change this to your file path
 PARENT_FOLDER_ID = "1lxI0aCMO1ilM6S_xGMpoAheMQpdyOov_"
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
-service_account_file = 'service_account.json'
+service_account_file = './service_account.json'
 
 
 # Google Drive authentication
