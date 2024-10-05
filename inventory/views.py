@@ -4,7 +4,8 @@ from .forms import DailyCollectionForm
 from django.views.generic import View
 from django.shortcuts import get_object_or_404
 from .utils import *
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
+
 
 @login_required
 def add_daily_collection(request):
@@ -89,7 +90,7 @@ def analytics_view(request):
     context['products_sold'] = get_sold_products_last_month()
 
     context['user'] = request.user
-    print((request.user))
+
     return render(request, 'analytics.html', context=context)
 
 
@@ -99,3 +100,38 @@ def index_page(request):
 
 def redirect_to_admin(request):
     return redirect('/admin/login/')
+
+@login_required
+def get_unpaid_bills(request):
+    dukandaar_id = request.GET.get('dukandaar')
+
+    if not dukandaar_id:
+        return JsonResponse({'error': 'No dukandaar ID provided'}, status=400)
+
+    try:
+        # Ensure the dukandaar exists before filtering bills
+        dukandaar = Dukandaar.objects.get(id=dukandaar_id)
+
+        bills = Bill.objects.filter(dukandaar_id=dukandaar_id, paid=False)
+
+        # Manually constructing the string representation
+        bill_data = [{
+            'id': bill.id,
+            'dukandaar': bill.dukandaar.name,  # Assuming __str__ uses the dukandaar's name
+            'date': bill.date,
+            'total_amount': bill.total_amount,
+            'pending_amount': bill.pending_amount,
+            '__str__': str(bill)  # This will call the __str__() method
+        } for bill in bills]
+
+        if bills.exists():
+            return JsonResponse({'bills': bill_data}, status=200)
+        else:
+            return JsonResponse({'error': 'No unpaid bills found for this dukandaar'}, status=404)
+
+    except Dukandaar.DoesNotExist:
+        return JsonResponse({'error': 'Dukandaar does not exist'}, status=404)
+
+    except Exception as e:
+        print(f"Error fetching unpaid bills: {e}")
+        return JsonResponse({'error': 'An error occurred while fetching unpaid bills'}, status=500)

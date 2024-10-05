@@ -35,7 +35,7 @@ class Dukandaar(models.Model):
     contact_info = models.CharField(max_length=255, blank=True)
     area = models.ForeignKey(Area, on_delete=models.CASCADE)
     pending_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=False)
-    address = models.CharField(max_length=50, default="")
+    address = models.CharField(max_length=50, default="", blank=True, null=True)
 
     def __str__(self):
         return self.name + " " + self.area.area_name
@@ -45,6 +45,7 @@ class Bill(models.Model):
     dukandaar = models.ForeignKey(Dukandaar, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
+    pending_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, editable=False)
     paid = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
@@ -52,14 +53,14 @@ class Bill(models.Model):
 
     def delete(self, *args, **kwargs):
         if not self.paid:
-            self.dukandaar.pending_amount -= self.total_amount
+            self.dukandaar.pending_amount -= self.pending_amount
             self.dukandaar.save()
         for item in self.items.all():
             item.delete()
         super().delete(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.id} - {self.dukandaar} - {self.date}"
+        return f"{self.id} - {self.dukandaar} - {self.date} - {self.pending_amount}"
 
 class Item(models.Model):
     bill = models.ForeignKey(Bill, related_name='items', on_delete=models.CASCADE)
@@ -72,11 +73,12 @@ class Item(models.Model):
     def save(self, *args, **kwargs):
         self.amount = (self.kg * self.price_per_kg) + (self.bora * self.price_per_kg * self.product.one_bora_in_kg)
         super().save(*args, **kwargs)
+        self.bill.total_amount += self.amount
         if not self.bill.paid:
-            self.bill.total_amount += self.amount
+            self.bill.pending_amount += self.amount
             self.bill.dukandaar.pending_amount += self.amount
             self.bill.dukandaar.save()
-            self.bill.save()
+        self.bill.save()
         self.product.stock_in_kg -= ((self.bora * self.product.one_bora_in_kg) + self.kg)
         self.product.save()
 
@@ -91,15 +93,34 @@ class Item(models.Model):
 
 class DailyCollection(models.Model):
     dukandaar = models.ForeignKey(Dukandaar, related_name='dukandaar', on_delete=models.CASCADE)
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, null=True, blank=True)
     collection_time = models.DateTimeField(auto_now_add=True)
     amount_collected = models.DecimalField(max_digits=10, decimal_places=2)
     pending_amount_as_of_today = models.DecimalField(max_digits=10, decimal_places=2, editable=False, default=0)
 
     def save(self, *args, **kwargs):
         self.pending_amount_as_of_today = self.dukandaar.pending_amount - self.amount_collected
+
+        # Reduce the pending amount of the bill if a bill is associated
+        if self.bill:
+            self.bill.pending_amount -= self.amount_collected
+            self.bill.save()
+            if self.bill.pending_amount <= 0:
+                self.bill.paid = True
+                self.bill.save()
+
         super().save(*args, **kwargs)
         self.dukandaar.pending_amount -= self.amount_collected
         self.dukandaar.save()
+
+    def __delete__(self,  *args, **kwargs):
+        if self.bill:
+            self.bill.pending_amount += self.amount_collected
+            self.bill.save()
+            if self.bill.pending_amount > 0:
+                self.bill.paid = False
+                self.bill.save()
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"Collection by {self.dukandaar} on {self.collection_time}"

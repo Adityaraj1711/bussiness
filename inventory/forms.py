@@ -27,3 +27,22 @@ class PurchaseOrderAdminForm(forms.ModelForm):
         if len(company) == 1:
             # Auto-select the only available Dukandaar
             self.fields['company'].initial = company.first()
+
+class DailyCollectionForm(forms.ModelForm):
+    class Meta:
+        model = DailyCollection
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(DailyCollectionForm, self).__init__(*args, **kwargs)
+        # Initially, no bill is available, this will be populated based on the selected dukandaar
+        self.fields['bill'].queryset = Bill.objects.none()
+
+        if 'dukandaar' in self.data:
+            try:
+                dukandaar_id = int(self.data.get('dukandaar'))
+                self.fields['bill'].queryset = Bill.objects.filter(dukandaar_id=dukandaar_id, paid=False)
+            except (ValueError, TypeError):
+                pass  # Invalid input; ignore and leave bill queryset empty
+        elif self.instance.pk:
+            self.fields['bill'].queryset = Bill.objects.filter(dukandaar=self.instance.dukandaar, paid=False)

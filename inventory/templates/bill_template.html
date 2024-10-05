@@ -1,251 +1,142 @@
-<!doctype html>
-<html class="no-js" lang="">
+{% load static from static %}
 
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Invoice Template</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link rel="stylesheet" href="./web/modern-normalize.css">
-    <link rel="stylesheet" href="./web/web-base.css">
-    <link rel="stylesheet" href="./web/invoice.css">
-    <script type="text/javascript" src="./web/scripts.js"></script>
+    <meta charset="UTF-8">
     <style>
-        /*
-  Common invoice styles. These styles will work in a browser or using the HTML
-  to PDF anvil endpoint.
-*/
-
+        /* Ensure fixed width for the entire invoice */
         body {
-            font-size: 16px;
+            font-family: Arial, sans-serif;
+            font-size: 1.5em;
+            max-width: 6em;
+            margin: 0 auto;
+            padding: 0px;
+            border: 0px solid #000;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+        }
+
+        .invoice-header {
+            text-align: left;
+            margin-bottom: 2em;
+        }
+
+        .invoice-header .company-info {
+            font-size: 1em;
+        }
+
+        .invoice-details {
+            margin-bottom: 1em;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 20px;
         }
 
-        table tr td {
-            padding: 0;
+        .details table, th, td {
+            border: 0px solid black;
         }
 
-        table tr td:last-child {
-            text-align: right;
+        table, th, td {
+            border: 1px solid black;
         }
 
-        .bold {
-            font-weight: bold;
-        }
-
-        .right {
-            text-align: right;
-        }
-
-        .large {
-            font-size: 1.75em;
+        th, td {
+            padding: 0.5em;
+            text-align: left;
         }
 
         .total {
+            text-align: right;
+        }
+
+        .total-value {
             font-weight: bold;
-            color: #fb7578;
         }
 
-        .logo-container {
-            margin: 10px 0 10px 0;
-        }
-
-        .invoice-info-container {
-            font-size: 0.875em;
-        }
-        .invoice-info-container td {
-            padding: 4px 0;
-        }
-
-        .client-name {
-            font-size: 1.5em;
-            vertical-align: top;
-        }
-
-        .line-items-container {
-            margin: 10px 0;
-            font-size: 0.75em;
-        }
-
-        .line-items-container th {
-            text-align: left;
-            color: #999;
-            border-bottom: 2px solid #ddd;
-            padding: 10px 0 15px 0;
-            font-size: 0.75em;
-            text-transform: uppercase;
-        }
-
-        .line-items-container th:last-child {
-            text-align: right;
-        }
-
-        .line-items-container td {
-            text-align: left;
-            color: #999;
-            border-bottom: 2px solid #ddd;
-            padding: 10px 0 15px 0;
-            font-size: 0.75em;
-            text-transform: uppercase;
-        }
-
-        .line-items-container tbody tr:first-child td {
-            padding-top: 15px;
-        }
-
-        .line-items-container.has-bottom-border tbody tr:last-child td {
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .line-items-container.has-bottom-border {
-            margin-bottom: 0;
-        }
-
-        .line-items-container th.heading-quantity {
-            width: 100px;
-        }
-        .line-items-container th.heading-price {
-            text-align: right;
-            width: 100px;
-        }
-        .line-items-container th.heading-subtotal {
-            width: 100px;
-        }
-
-        .payment-info {
-            width: 28%;
-            font-size: 0.55em;
-            line-height: 1;
-        }
-
-        .footer {
-            margin-top: 10px;
-        }
-
-        .footer-thanks {
+        /* Footer */
+        .invoice-footer {
+            text-align: center;
+            margin-top: 2em;
             font-size: 0.5em;
         }
 
-        .footer-thanks img {
-            display: inline-block;
-            position: relative;
-            top: 1px;
-            width: 6px;
-            margin-right: 4px;
-        }
-
-        .footer-info {
-            float: right;
-            margin-top: 5px;
-            font-size: 0.5em;
-            color: #ccc;
-        }
-
-        .footer-info span {
-            padding: 0 5px;
-            color: black;
-        }
-
-        .footer-info span:last-child {
-            padding-right: 0;
-        }
-
-        .page-container {
-            display: none;
-        }
-
-        .web-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 10px;
-        }
     </style>
 </head>
 <body>
 
-<div class="web-container">
+<!-- Header Section -->
+<h1>Order Bill</h1>
 
-    <!-- See invoice.html! It is injected here... -->
-
+<div class="invoice-header">
+    <h3>Neelkamal Agency</h3>
+    <p class="company-info">
+        Jhari Sao lane, Jehanabad, 804408<br>
+    </p>
 </div>
 
-<div class="page-container">
-</div>
 
-<div class="logo-container">
-    <img
-            style="height: 88px"
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxtls6eA4RJieDvlipn7u92cFGWf_J2ay1bA&s"
-    >
-</div>
-
-<table class="invoice-info-container">
-    <tr>
-        <td rowspan="2" class="client-name">
-            Dukandaar: <strong>{{ bill.dukandaar.name }}
-        </td>
-        <td>
-            Address: {{ bill.dukandaar.address }}
-        </td>
-    </tr>
-    <tr>
-        <td>
-            Phone: {{ bill.dukandaar.phone }}
-        </td>
-    </tr>
-    <tr>
-        <td>
-            Invoice Date: <strong>{{ bill.date }}</strong>
-        </td>
-        <td>
-            San Francisco CA, 94103
-        </td>
-    </tr>
-    <tr>
-        <td>
-            Invoice No: <strong>12345</strong>
-        </td>
-        <td>
-            hello@useanvil.com
-        </td>
-    </tr>
-</table>
-
-
-<table class="line-items-container">
+<!-- Dukandaar and Bill Details -->
+<table class="details">
     <thead>
     <tr>
-        <th class="heading-description">Product Name</th>
-        <th class="heading-quantity">Qty in KG</th>
-        <th class="heading-price">Price per KG</th>
-        <th class="heading-subtotal">Subtotal</th>
+        <td>
+                Area: <strong>{{ bill.dukandaar.area.area_name }}</strong>
+        </td>
+        <td>
+            Dukandaar Name: <strong>{{ bill.dukandaar.name }}</strong>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class="invoice-details">
+                <p>Date: <strong>{{ bill.date }}</strong>
+            </div>
+        </td>
+        <td>
+            Bill Id:<strong>  {{ bill.id }}</strong>
+        </td>
+    </tr>
+    </thead>
+
+</table>
+
+<!-- Items Table -->
+<table>
+    <thead>
+    <tr>
+        <th>Item</th>
+        <th>Bora (Qty)</th>
+        <th>Kg (Qty)</th>
+        <th>Rate</th>
+        <th>Amount</th>
     </tr>
     </thead>
     <tbody>
     {% for item in bill.items.all %}
-    <tr>
-        <td>{{ item.product.name }}</td>
-        <td>{{ item.kg }}</td>
-        <td>{{ item.price_per_kg }}</td>
-        <td>{{ item.amount }}</td>
-    </tr>
+        <tr>
+            <td><strong>{{ item.product.name }}</strong></td>
+            <td>{{ item.bora }}</td>
+            <td>{{ item.kg }}</td>
+            <td>{{ item.price_per_kg }}</td>
+            <td>{{ item.amount }}</td>
+        </tr>
     {% endfor %}
     </tbody>
 </table>
 
-<div class="footer">
-    <div class="footer-info">
-        <span>savitrisuman0803@gmail.com</span> |
-        <span>useanvil.com</span>
-    </div>
-    <div class="footer-thanks">
-        <span>Thank you!</span>
-    </div>
+<!-- Total Amount -->
+<p class="total"><strong>Total Amount: </strong> <span class="total-value">{{ bill.total_amount }}</span></p>
+
+<!-- Footer -->
+<div class="invoice-footer">
+    <p>Thank you for your business!</p>
 </div>
 
-</body></html>
+</body>
+</html>

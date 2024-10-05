@@ -2,7 +2,7 @@ from io import StringIO
 
 from django.contrib import admin
 
-from .forms import PurchaseOrderAdminForm, BillAdminForm
+from .forms import PurchaseOrderAdminForm, BillAdminForm, DailyCollectionForm
 from .models import Company, Product, Dukandaar, Bill, DailyCollection, Item, PurchaseItem, PurchaseOrder, Area, CompanyPayment
 from django.utils.html import format_html
 from django.urls import reverse
@@ -12,17 +12,6 @@ from django.contrib.admin import DateFieldListFilter
 admin.site.site_header = "Neelkamal Admin"
 admin.site.site_title = "Neelkamal Administration"
 admin.site.index_title = "Manage Inventory and Bills"
-
-# admin.site.unregister(Area)
-# admin.site.unregister(Bill)
-# admin.site.unregister(CompanyPayment)
-# admin.site.unregister(Company)
-# admin.site.unregister(DailyCollection)
-# admin.site.unregister(Item)
-# admin.site.unregister(Product)
-# admin.site.unregister(PurchaseItem)
-# admin.site.unregister(PurchaseOrder)
-# admin.site.unregister(Dukandaar)
 
 class PurchaseItemInLine(admin.TabularInline):
     model = PurchaseItem
@@ -47,14 +36,23 @@ class DailyCollectionAdmin(admin.ModelAdmin):
     ]
     autocomplete_fields = ['dukandaar']
     search_fields = ['dukandaar__name', 'collection_time']
+    change_form_template = 'admin/inventory/change_form.html'
+    form = DailyCollectionForm
 
     class Media:
-        js = ('admin/js/admin_autofocus.js',)
+        js = (
+            'admin/js/vendor/jquery/jquery.js',
+            'admin/js/admin_autofocus.js',
+            'admin/js/dukandaar_bill_filter.js',
+        )
 
 class DukandaarAdmin(admin.ModelAdmin):
     inlines = [BillInline]
     list_display = ('name', 'contact_info', 'pending_amount')
     search_fields = ['name']
+    list_filter = [
+        'area',
+    ]
 
 class ItemAdmin(admin.ModelAdmin):
     fields = ['product', 'kg', 'price_per_kg', 'amount']
